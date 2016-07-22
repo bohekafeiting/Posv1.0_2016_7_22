@@ -1,0 +1,168 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="fixture.js"></script>
+    <script>
+        tags = [
+            'ITEM000001',
+            'ITEM000001',
+            'ITEM000001',
+            'ITEM000001',
+            'ITEM000001',
+            'ITEM000003-2.5',
+            'ITEM000005',
+            'ITEM000005',
+            'ITEM000005'
+        ];
+        // 下面写实现
+        function parseTags(tags){
+            return tags.map(function (tag) {
+                let temp=tag.split('-');
+                return {
+                    barcode:temp[0],amount:parseFloat(temp[1])||1
+                }
+            })
+        }
+
+        function getItemsAmount(barcodes) {
+            let amountItems=[];
+            for(item of barcodes){
+                let exitItems=amountItems.find(function(temp){
+                    return temp.barcode===item.barcode;
+                })
+                if(exitItems){
+                    exitItems.amount+=item.amount;
+                }
+                else {
+                    amountItems.push(Object.assign({},{barcode:item.barcode,amount:item.amount}));
+                }
+            }
+            return amountItems;
+        }
+
+        function getCartItems(amountItems) {
+           let allItems = loadAllItems();
+           let cartItems= [];
+            {
+                for (item of amountItems) {
+                    let exit=allItems.find(function (temp) {
+                        return item.barcode===temp.barcode;
+                    })
+                    if (exit) {
+                        cartItems.push(Object.assign({}, exit, {amount: item.amount}));
+                    }
+                }
+            }
+            return cartItems;
+            }
+
+        function getOriginalSubtotal(cartItems) {
+              let originalsubtotal = [];
+              for (item of cartItems) {
+                 originalsubtotal.push(Object.assign({}, item,{subtotal: item.amount * item.price}));
+                    }
+              return originalsubtotal;
+        }
+
+        function loadPromotions() {
+           return [
+                       {
+                           type:'BUY_TWO_GET_ONE_FREE',
+                           barcodes: [
+                               'ITEM000000',
+                               'ITEM000001'
+                           ]
+                       },
+                       {
+                           type:'OTHER_PROMOTION',
+                           barcodes: [
+                               'ITEM000003',
+                               'ITEM000004'
+                           ]
+                       }
+                   ]
+        }
+
+        function  getDiscountType() {
+            let promotions=loadPromotions();
+            let discountTypes=[];
+            for(temp of promotions){
+               for(let i=0;i<temp.barcodes.length;i++){
+                  discountTypes.push(Object.assign({},{barcode:temp.barcodes[i],discounttype:temp.type}))
+               }
+            }
+            return discountTypes;
+        }
+
+        function getItemsDiscount(originalsubtotal) {
+            let discountTypes=getDiscountType();
+            let itemsDiscount= [];
+            {
+                for (item of originalsubtotal) {
+                    let exit=discountTypes.find(function (temp) {
+                        return item.barcode===temp.barcode;
+                    })
+                   console.log(exit);
+            if(exit)
+                 itemsDiscount.push(Object.assign({}, item,{type:exit.discounttype}));
+            else
+                itemsDiscount.push(Object.assign({}, item));
+                    }
+                }
+            return itemsDiscount;
+        }
+
+        function caculateDiscount(itemsdiscount) {
+          let subtotalitems=[];
+          for(item of itemsdiscount){
+             dissubtotal=0;
+              if(item.type==='BUY_TWO_GET_ONE_FREE') {
+                 let i = parseInt(item.amount / 2);
+                 let j = parseInt(item.amount % 2);
+                 if (i >= j)
+                     dissubtotal=item.price * 2 * i;
+                 else
+                     dissubtotal=item.price * (2 * i+j);
+             }
+            else
+                 dissubtotal=item.price*item.amount;
+            savemoney+=item.price*item.amount-dissubtotal;
+            subtotalitems.push(Object.assign({},item,{subtotal:dissubtotal}));
+          }
+          return subtotalitems;
+        }
+
+        function getTotal(subtotalitems) {
+            let total=0;
+           for(item of subtotalitems){
+               total+=item.subtotal;
+           }
+           return total;
+        }
+
+      function  printRecipt() {
+        savemoney=0;
+        barcodes=parseTags(tags); console.log(JSON.stringify(barcodes));
+        amountItems=getItemsAmount(barcodes);
+        cartItems=getCartItems(amountItems);
+        originalsubtotal=getOriginalSubtotal(cartItems);
+        itemsdiscount =getItemsDiscount(originalsubtotal);
+        subtotalitems=caculateDiscount(itemsdiscount);
+        total=getTotal(subtotalitems);
+        console.log('------<没钱赚商店>购物清单---------')
+        console.log(JSON.stringify(subtotalitems,null,4));
+        console.log('------------------------------')
+        console.log('节省:'+savemoney+'元');
+        console.log('合计'+total+'元');
+      }(console.log(printRecipt()));
+
+
+    </script>
+</head>
+<body>
+
+</body>
+</html>
